@@ -34,22 +34,22 @@ import androidx.compose.ui.viewinterop.AndroidView
 import ru.gorbulevsv.composeto3webview.ui.theme.ComposeTo3WebViewTheme
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
-    var currentDate = mutableStateOf(LocalDateTime.now())
-    var url0 = mutableStateOf(url(currentDate.value.minusDays(1)))
-    var url1 = mutableStateOf(url(currentDate.value))
-    var url2 = mutableStateOf(url(currentDate.value.plusDays(1)))
-    var listIndex = mutableStateOf(listOf(0, 1, 2))
-    var activeIndex = derivedStateOf { listIndex.value[1] }
-    fun stringDate(date: LocalDateTime): String {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        return date.format(formatter)
-    }
+    var listDate = mutableStateOf(
+        listOf(
+            LocalDateTime.now().minusDays(1),
+            LocalDateTime.now(),
+            LocalDateTime.now().plusDays(1)
+        )
+    )
 
-    fun url(date: LocalDateTime): String {
-        return "http://www.patriarchia.ru/bu/${stringDate(date)}/print.html"
-    }
+    var url0 = mutableStateOf(url(listDate.value[0]))
+    var url1 = mutableStateOf(url(listDate.value[1]))
+    var url2 = mutableStateOf(url(listDate.value[2]))
+
+    var activeDate = mutableStateOf(listDate.value[1])
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,6 +59,12 @@ class MainActivity : ComponentActivity() {
             ComposeTo3WebViewTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                Text(activeDate.value.toString())
+                            })
+                    },
                     bottomBar = {
                         BottomAppBar {
                             Row(
@@ -68,24 +74,26 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 Button(onClick = {
                                     val newList =
-                                        listOf<Int>(
-                                            listIndex.value[2],
-                                            listIndex.value[0],
-                                            listIndex.value[1]
+                                        listOf(
+                                            listDate.value[0].minusDays(1),
+                                            listDate.value[0],
+                                            listDate.value[1]
                                         )
-                                    listIndex.value = newList
+                                    url0.value = url(newList[0])
+                                    listDate.value = newList
                                 }) {
                                     Text("Назад")
                                 }
                                 Button(onClick = {
+                                    activeDate.value = listDate.value[2]
                                     val newList =
-                                        listOf<Int>(
-                                            listIndex.value[1],
-                                            listIndex.value[2],
-                                            listIndex.value[0]
+                                        listOf(
+                                            listDate.value[1],
+                                            listDate.value[2],
+                                            listDate.value[2].plusDays(1)
                                         )
-                                    url0.value = url(currentDate.value.plusDays(2))
-                                    listIndex.value = newList
+                                    url2.value = url(newList[2])
+                                    listDate.value = newList
                                 }) {
                                     Text("Вперёд")
                                 }
@@ -95,21 +103,21 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     Web(
                         url = url0.value,
-                        isShow = activeIndex.value == 0,
+                        isShow = activeDate.value == listDate.value[0],
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize()
                     )
                     Web(
                         url = url1.value,
-                        isShow = activeIndex.value == 1,
+                        isShow = activeDate.value == listDate.value[1],
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize()
                     )
                     Web(
                         url = url2.value,
-                        isShow = activeIndex.value == 2,
+                        isShow = activeDate.value == listDate.value[2],
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize()
@@ -122,7 +130,7 @@ class MainActivity : ComponentActivity() {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun Web(url: String = "", isShow: Boolean = false, modifier: Modifier = Modifier) {
+fun Web(url: String, isShow: Boolean, modifier: Modifier = Modifier) {
     AndroidView(
         modifier = modifier.alpha(if (isShow) 1f else 0f),
         factory = {
@@ -151,9 +159,15 @@ fun Web(url: String = "", isShow: Boolean = false, modifier: Modifier = Modifier
                 }
                 loadUrl(url)
             }
+
         },
         update = {
             it.loadUrl(url)
         }
     )
+}
+
+fun url(date: LocalDateTime): String {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    return "http://www.patriarchia.ru/bu/${date.format(formatter)}/print.html"
 }
