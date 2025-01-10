@@ -32,13 +32,24 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import ru.gorbulevsv.composeto3webview.ui.theme.ComposeTo3WebViewTheme
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
-    var url0 = mutableStateOf("http://www.patriarchia.ru/bu/2025-01-09/print.html")
-    var url1 = mutableStateOf("http://www.patriarchia.ru/bu/2025-01-10/print.html")
-    var url2 = mutableStateOf("http://www.patriarchia.ru/bu/2025-01-11/print.html")
+    var currentDate = mutableStateOf(LocalDateTime.now())
+    var url0 = mutableStateOf(url(currentDate.value.minusDays(1)))
+    var url1 = mutableStateOf(url(currentDate.value))
+    var url2 = mutableStateOf(url(currentDate.value.plusDays(1)))
     var listIndex = mutableStateOf(listOf(0, 1, 2))
     var activeIndex = derivedStateOf { listIndex.value[1] }
+    fun stringDate(date: LocalDateTime): String {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        return date.format(formatter)
+    }
+
+    fun url(date: LocalDateTime): String {
+        return "http://www.patriarchia.ru/bu/${stringDate(date)}/print.html"
+    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,6 +84,7 @@ class MainActivity : ComponentActivity() {
                                             listIndex.value[2],
                                             listIndex.value[0]
                                         )
+                                    url0.value = url(currentDate.value.plusDays(2))
                                     listIndex.value = newList
                                 }) {
                                     Text("Вперёд")
