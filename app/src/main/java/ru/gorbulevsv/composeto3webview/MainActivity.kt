@@ -12,6 +12,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.collection.MutableIntList
 import androidx.collection.mutableIntListOf
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -26,10 +28,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import ru.gorbulevsv.composeto3webview.ui.theme.ComposeTo3WebViewTheme
 import java.time.LocalDateTime
@@ -37,19 +41,23 @@ import java.time.format.DateTimeFormatter
 import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
-    var listDate = mutableStateOf(
-        listOf(
-            LocalDateTime.now().minusDays(1),
-            LocalDateTime.now(),
-            LocalDateTime.now().plusDays(1)
-        )
+//    var listDate = mutableStateOf(
+//        listOf(
+//            LocalDateTime.now().minusDays(1),
+//            LocalDateTime.now(),
+//            LocalDateTime.now().plusDays(1)
+//        )
+//    )
+
+    var listI = mutableStateOf(
+        listOf(0, 1, 2)
     )
+    var activeI = derivedStateOf { listI.value[1] }
+    var step = mutableStateOf(0)
 
-    var url0 = mutableStateOf(url(listDate.value[0]))
-    var url1 = mutableStateOf(url(listDate.value[1]))
-    var url2 = mutableStateOf(url(listDate.value[2]))
-
-    var activeDate = mutableStateOf(listDate.value[1])
+    var date0 = mutableStateOf(LocalDateTime.now())
+    var date1 = mutableStateOf(LocalDateTime.now().plusDays(1))
+    var date2 = mutableStateOf(LocalDateTime.now().plusDays(2))
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,7 +70,7 @@ class MainActivity : ComponentActivity() {
                     topBar = {
                         TopAppBar(
                             title = {
-                                Text(activeDate.value.toString())
+                                Text(activeI.value.toString())
                             })
                     },
                     bottomBar = {
@@ -73,27 +81,44 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 Button(onClick = {
-                                    val newList =
-                                        listOf(
-                                            listDate.value[0].minusDays(1),
-                                            listDate.value[0],
-                                            listDate.value[1]
-                                        )
-                                    url0.value = url(newList[0])
-                                    listDate.value = newList
+                                    step.value--
+                                    when (activeI.value) {
+                                        0 -> date1.value =
+                                            LocalDateTime.now().plusDays(step.value.toLong())
+
+                                        1 -> date2.value =
+                                            LocalDateTime.now().plusDays(step.value.toLong())
+
+                                        2 -> date0.value =
+                                            LocalDateTime.now().plusDays(step.value.toLong())
+                                    }
+                                    var newListI = listOf(
+                                        listI.value[2],
+                                        listI.value[0],
+                                        listI.value[1]
+                                    )
+                                    listI.value = newListI
                                 }) {
                                     Text("Назад")
                                 }
                                 Button(onClick = {
-                                    activeDate.value = listDate.value[2]
-                                    val newList =
-                                        listOf(
-                                            listDate.value[1],
-                                            listDate.value[2],
-                                            listDate.value[2].plusDays(1)
-                                        )
-                                    url2.value = url(newList[2])
-                                    listDate.value = newList
+                                    step.value++
+                                    when (activeI.value) {
+                                        0 -> date2.value =
+                                            LocalDateTime.now().plusDays(step.value.toLong())
+
+                                        1 -> date0.value =
+                                            LocalDateTime.now().plusDays(step.value.toLong())
+
+                                        2 -> date1.value =
+                                            LocalDateTime.now().plusDays(step.value.toLong())
+                                    }
+                                    var newListI = listOf(
+                                        listI.value[1],
+                                        listI.value[2],
+                                        listI.value[0]
+                                    )
+                                    listI.value = newListI
                                 }) {
                                     Text("Вперёд")
                                 }
@@ -101,27 +126,29 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
+
                     Web(
-                        url = url0.value,
-                        isShow = activeDate.value == listDate.value[0],
+                        url = url(date0.value),
+                        isShow = activeI.value == 0,
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize()
                     )
                     Web(
-                        url = url1.value,
-                        isShow = activeDate.value == listDate.value[1],
+                        url = url(date1.value),
+                        isShow = activeI.value == 1,
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize()
                     )
                     Web(
-                        url = url2.value,
-                        isShow = activeDate.value == listDate.value[2],
+                        url = url(date2.value),
+                        isShow = activeI.value == 2,
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize()
                     )
+
                 }
             }
         }
@@ -130,7 +157,7 @@ class MainActivity : ComponentActivity() {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun Web(url: String, isShow: Boolean, modifier: Modifier = Modifier) {
+fun Web(url: String, isShow: Boolean = false, modifier: Modifier = Modifier) {
     AndroidView(
         modifier = modifier.alpha(if (isShow) 1f else 0f),
         factory = {
@@ -159,7 +186,6 @@ fun Web(url: String, isShow: Boolean, modifier: Modifier = Modifier) {
                 }
                 loadUrl(url)
             }
-
         },
         update = {
             it.loadUrl(url)
